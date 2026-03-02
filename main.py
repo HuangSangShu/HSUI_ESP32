@@ -10,7 +10,7 @@ def main():
     acc.value(1)
     backlight = Pin(8, Pin.OUT)
     backlight.value(1)
-    # display settings
+    
     _WIDTH = const(240)
     _HEIGHT = const(320)
     _BL = const(8)
@@ -44,8 +44,8 @@ def main():
     )
     fb1 = display_bus.allocate_framebuffer(_BUFFER_SIZE, lcd_bus.MEMORY_INTERNAL | lcd_bus.MEMORY_DMA)
     fb2 = display_bus.allocate_framebuffer(_BUFFER_SIZE, lcd_bus.MEMORY_INTERNAL | lcd_bus.MEMORY_DMA)
-    import st7789  # NOQA
-    import lvgl as lv  # NOQA
+    import st7789  
+    import lvgl as lv  
 
     display = st7789.ST7789(
         data_bus=display_bus,
@@ -61,9 +61,9 @@ def main():
         rgb565_byte_swap=True,
     )
 
-    import i2c  # NOQA
-    import task_handler  # NOQA
-    import ft6x36  # NOQA
+    import i2c  
+    import task_handler  
+    import ft6x36  
 
     display.init()
 
@@ -72,33 +72,36 @@ def main():
 
     indev = ft6x36.FT6x36(touch_dev)
 
-    # you want to rotate the display after the calibration has been done in order
-    # to keep the corners oriented properly.
+    
     display.set_rotation(lv.DISPLAY_ROTATION._270)
   
     display.set_backlight(100)
     
+    #出问题就注释以下一行以显示错误报告
     th = task_handler.TaskHandler()
-
-    #以上代码感谢Cookie_987提供的支持 | THANKS TO Cookie_987 FOR THE ABOVE CODE
     
-
     scrn = lv.screen_active()
     scrn.set_style_bg_color(lv.color_hex(0x000000), 0)
 
-    
-    #改就光改下面的好吧，上面全是初始化
-    
-    
+    #以上代码感谢Cookie_987提供的支持 | THANKS TO Cookie_987 FOR THE ABOVE CODE
+
+    #----------修改上限----------
+
+    style = lv.style_t()
+    style.init()
+    style.set_text_font(lv.font_montserrat_16)
+
     time_label = lv.label(scrn)
+    time_label.add_style(style, 0)
     time_label.set_pos(0,0)
     time_label.set_text("loading")
 
     calendar = lv.calendar(scrn)    
     calendar.set_size(300, 200)
-    calendar.set_pos(10, 20)
-    calendar.set_today_date(2026,3,1)
-    calendar.set_month_shown(2026,3)
+    calendar.set_pos(10, 25)
+    calendar.set_today_date(2026,3,2)
+    calendar.set_month_shown(2026,3)    
+    
           
     while True:
         now_time = time.localtime()
