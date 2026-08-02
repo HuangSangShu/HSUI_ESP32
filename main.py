@@ -15,18 +15,52 @@ FRONT = None
 b_boot = None
 b_home = None
 current_screen_state = "BOOT" # 记录当前页面状态
+last_time = 0
+last_time2 = 0
+issleep = False
 
-def check_button(select):
+
+
+'''def check_button(select):
     global b_boot, b_home
     if select == 0:
         return not b_boot.value() # 假设低电平按下
     elif select == 1:
         return not b_home.value()
     else:
-        return False
+        return False'''
     
+def button_pressed(pin):
+    global last_time
+    if issleep == False:
+        now = time.ticks_ms()
+        if time.ticks_diff(now,last_time) > 200:   #去抖
+            last_time = now
+            if current_screen_state == "MAINSCREEN":
+                load_mainmenu()
+            elif current_screen_state == "MAINMENU":
+                load_mainscreen()
+            elif current_screen_state == "CALENDAR":
+                load_mainmenu()
+
+
+def ossleep(pin):
+    global display,last_time2,issleep
+    now = time.ticks_ms()
+    if time.ticks_diff(now,last_time2) > 200:   #去抖
+        last_time2 = now
+        if issleep == False:
+            issleep = True
+            display.set_backlight(0)
+            
+        else:
+            issleep = False
+            display.set_backlight(75)    
+            
+
+
 def boot():
-    global FONT48, FONT14, s_text14, BACK, FRONT, b_boot, b_home, current_screen_state
+    global FONT48, FONT14, s_text14, BACK, FRONT, b_boot, b_home, current_screen_state,display
 
     acc = Pin(40, Pin.OUT)
     acc.value(1)
@@ -127,14 +161,23 @@ def boot():
     lv.screen_load(scr)
 
     time.sleep(2)
-    
+
+    wdt = machine.WDT(timeout=10000)
+    b_boot.irq(trigger=Pin.IRQ_FALLING,handler=button_pressed)
+    b_home.irq(trigger=Pin.IRQ_FALLING,handler=ossleep)
+
+
     # 进入主屏幕
     load_mainscreen()
 
+
+
+
+
     # 主循环：仅用于硬件物理按键检查和非阻塞轮询
-    last_btn_state = False
+    # last_btn_state = False
     while True:
-        btn_pressed = check_button(0)
+        '''btn_pressed = check_button(0)
         
         # 检测按键边沿（按下瞬间）
         if btn_pressed and not last_btn_state:
@@ -145,18 +188,27 @@ def boot():
             elif current_screen_state == "CALENDAR":
                 load_mainmenu()
         
-        last_btn_state = btn_pressed
+        last_btn_state = btn_pressed'''
         
         # 如果在时钟页面，实时更新时间
         if current_screen_state == "MAINSCREEN":
             update_clock_labels()
 
         time.sleep_ms(50)
+        wdt.feed()
+
+
+
+
 
 # 保存时钟标签对象的全局引用以便局部更新
 d_main_clock = None
 d_weekday = None
 d_date = None
+
+
+
+
 
 def load_mainscreen():
     global current_screen_state, d_main_clock, d_weekday, d_date
@@ -185,6 +237,10 @@ def load_mainscreen():
     update_clock_labels()
     lv.screen_load(scr)
 
+
+
+
+
 def update_clock_labels():
     if d_main_clock is None:
         return
@@ -193,6 +249,9 @@ def update_clock_labels():
     d_main_clock.set_text(f"{now_time[3]:02d}:{now_time[4]:02d}:{now_time[5]:02d}")
     d_weekday.set_text(weekdays_chinese[now_time[6]])
     d_date.set_text(f"{now_time[1]}/{now_time[2]}")
+
+
+
 
 def load_mainmenu():
     global current_screen_state
@@ -239,6 +298,9 @@ def load_mainmenu():
     d_4button_text.center()
 
     lv.screen_load(scr)
+
+
+
 
 def open_calendar_cb(e):
     global current_screen_state
