@@ -3,4 +3,4 @@
 
 暂未建设完毕，若着急使用，请去了解 [LemonadeOS](https://github.com/Cookie987/Lemonade)
 
-本系统使用驱动 [driver](https://github.com/Cookie987/micropython_esp32_firmware/releases/tag/LVGL_MicroPython-20260731)
+本系统使用驱动 [driver](https://github.com/Cookie987/micropython_esp32_firmware))
