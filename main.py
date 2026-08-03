@@ -1,4 +1,5 @@
 import time
+import sys
 import machine 
 from machine import Pin 
 from micropython import const 
@@ -18,6 +19,16 @@ current_screen_state = "BOOT" # 记录当前页面状态
 last_time = 0
 last_time2 = 0
 issleep = False
+
+# 离线修改时间相关
+TIME_SAVE_FILE = '/time.dat'
+TIME_FIELD_NAMES = ["年", "月", "日", "时", "分", "秒"]
+TIME_FIELD_MIN = [2000, 1, 1, 0, 0, 0]
+TIME_FIELD_MAX = [2099, 12, 31, 23, 59, 59]
+time_edit_vals = [0, 0, 0, 0, 0, 0]
+time_edit_sel = 0
+time_field_buttons = None
+time_field_value_labels = None
 
 
 
@@ -41,6 +52,8 @@ def button_pressed(pin):
             elif current_screen_state == "MAINMENU":
                 load_mainscreen()
             elif current_screen_state == "CALENDAR":
+                load_mainmenu()
+            elif current_screen_state == "SETTIME":
                 load_mainmenu()
 
 
@@ -167,6 +180,9 @@ def boot():
     b_home.irq(trigger=Pin.IRQ_FALLING,handler=ossleep)
 
 
+    # 恢复离线保存的时间（若有）
+    restore_saved_time()
+
     # 进入主屏幕
     load_mainscreen()
 
@@ -251,6 +267,206 @@ def update_clock_labels():
     d_date.set_text(f"{now_time[1]}/{now_time[2]}")
 
 
+def days_in_month(y, m):
+    if m == 2:
+        if (y % 4 == 0 and y % 100 != 0) or y % 400 == 0:
+            return 29
+        return 28
+    if m in (4, 6, 9, 11):
+        return 30
+    return 31
+
+
+def compute_weekday(y, m, d, hh, mm, ss):
+    ts = time.mktime((y, m, d, hh, mm, ss, 0, 0))
+    return time.localtime(ts)[6]
+
+
+def restore_saved_time():
+    try:
+        with open(TIME_SAVE_FILE, 'r') as f:
+            data = f.read().strip()
+        parts = [int(x) for x in data.split(',')]
+        if len(parts) != 6:
+            return
+        y, m, d, hh, mm, ss = parts
+        if not (2000 <= y <= 2099 and 1 <= m <= 12 and 1 <= d <= 31):
+            return
+        if not (0 <= hh <= 23 and 0 <= mm <= 59 and 0 <= ss <= 59):
+            return
+        if d > days_in_month(y, m):
+            d = days_in_month(y, m)
+        wd = compute_weekday(y, m, d, hh, mm, ss)
+        machine.RTC().datetime((y, m, d, wd, hh, mm, ss, 0))
+    except Exception:
+        pass
+
+
+def time_refresh_value(i):
+    global time_field_value_labels, time_edit_vals
+    v = time_edit_vals[i]
+    if i == 0:
+        value_text = "%d" % v
+    else:
+        value_text = "%02d" % v
+    time_field_value_labels[i].set_text("%s %s" % (TIME_FIELD_NAMES[i], value_text))
+    time_field_value_labels[i].center()
+
+
+def time_refresh_highlight():
+    global time_field_buttons, time_edit_sel
+    if time_field_buttons is None:
+        return
+    sel_bg = lv.color_make(255, 205, 120)
+    normal_bg = lv.color_make(255, 255, 180)
+    for i in range(len(time_field_buttons)):
+        if i == time_edit_sel:
+            time_field_buttons[i].set_style_bg_color(sel_bg, 0)
+        else:
+            time_field_buttons[i].set_style_bg_color(normal_bg, 0)
+
+
+def _sett_error(err):
+    sys.print_exception(err)
+    try:
+        load_mainmenu()
+    except Exception:
+        pass
+
+
+def _field_cb(idx):
+    def cb(e, *args):
+        try:
+            global time_edit_sel
+            time_edit_sel = idx
+            time_refresh_highlight()
+        except Exception as err:
+            _sett_error(err)
+    return cb
+
+
+def _adjust_cb(delta):
+    def cb(e, *args):
+        try:
+            global time_edit_vals
+            i = time_edit_sel
+            v = time_edit_vals[i] + delta
+            if v < TIME_FIELD_MIN[i]:
+                v = TIME_FIELD_MAX[i]
+            elif v > TIME_FIELD_MAX[i]:
+                v = TIME_FIELD_MIN[i]
+            time_edit_vals[i] = v
+            time_refresh_value(i)
+        except Exception as err:
+            _sett_error(err)
+    return cb
+
+
+def time_save_cb(e, *args):
+    global time_edit_vals
+    y, m, d, hh, mm, ss = time_edit_vals
+    if d > days_in_month(y, m):
+        d = days_in_month(y, m)
+    try:
+        wd = compute_weekday(y, m, d, hh, mm, ss)
+        machine.RTC().datetime((y, m, d, wd, hh, mm, ss, 0))
+        with open(TIME_SAVE_FILE, 'w') as f:
+            f.write("%d,%d,%d,%d,%d,%d" % (y, m, d, hh, mm, ss))
+    except Exception as err:
+        sys.print_exception(err)
+    load_mainmenu()
+
+
+def time_back_cb(e, *args):
+    try:
+        load_mainmenu()
+    except Exception as err:
+        sys.print_exception(err)
+
+
+def load_time_setting():
+    try:
+        _load_time_setting_impl()
+    except Exception as err:
+        sys.print_exception(err)
+        try:
+            load_mainmenu()
+        except Exception:
+            pass
+
+
+def _load_time_setting_impl():
+    global current_screen_state
+    global time_edit_vals, time_edit_sel, time_field_buttons, time_field_value_labels
+    current_screen_state = "SETTIME"
+
+    now_time = time.localtime()
+    time_edit_vals = [now_time[0], now_time[1], now_time[2], now_time[3], now_time[4], now_time[5]]
+    time_edit_sel = 0
+
+    scr = lv.obj()
+    scr.set_style_bg_color(BACK, 0)
+
+    d_title = lv.label(scr)
+    d_title.add_style(s_text14, 0)
+    d_title.set_pos(132, 6)
+    d_title.set_text("设置时间")
+
+    time_field_buttons = []
+    time_field_value_labels = []
+    for i in range(6):
+        col = i % 3
+        row = i // 3
+        b = lv.button(scr)
+        b.set_size(95, 48)
+        b.set_pos(10 + col * 105, 32 + row * 57)
+        b.add_style(s_text14, 0)
+        b.add_event_cb(_field_cb(i), lv.EVENT.CLICKED, None)
+        lab = lv.label(b)
+        time_field_buttons.append(b)
+        time_field_value_labels.append(lab)
+        time_refresh_value(i)
+
+    d_minus = lv.button(scr)
+    d_minus.set_size(60, 48)
+    d_minus.set_pos(10, 175)
+    d_minus.add_style(s_text14, 0)
+    d_minus_lab = lv.label(d_minus)
+    d_minus_lab.set_text("-")
+    d_minus_lab.center()
+    d_minus.add_event_cb(_adjust_cb(-1), lv.EVENT.CLICKED, None)
+
+    d_plus = lv.button(scr)
+    d_plus.set_size(60, 48)
+    d_plus.set_pos(75, 175)
+    d_plus.add_style(s_text14, 0)
+    d_plus_lab = lv.label(d_plus)
+    d_plus_lab.set_text("+")
+    d_plus_lab.center()
+    d_plus.add_event_cb(_adjust_cb(1), lv.EVENT.CLICKED, None)
+
+    d_save = lv.button(scr)
+    d_save.set_size(75, 48)
+    d_save.set_pos(150, 175)
+    d_save.add_style(s_text14, 0)
+    d_save_lab = lv.label(d_save)
+    d_save_lab.set_text("保存")
+    d_save_lab.center()
+    d_save.add_event_cb(time_save_cb, lv.EVENT.CLICKED, None)
+
+    d_back = lv.button(scr)
+    d_back.set_size(75, 48)
+    d_back.set_pos(235, 175)
+    d_back.add_style(s_text14, 0)
+    d_back_lab = lv.label(d_back)
+    d_back_lab.set_text("返回")
+    d_back_lab.center()
+    d_back.add_event_cb(time_back_cb, lv.EVENT.CLICKED, None)
+
+    time_refresh_highlight()
+    lv.screen_load(scr)
+
+
 
 
 def load_mainmenu():
@@ -276,8 +492,9 @@ def load_mainmenu():
     d_2button.set_size(145, 70)
     d_2button.set_pos(165, 160)
     d_2button_text = lv.label(d_2button)
-    d_2button_text.set_text("none")
+    d_2button_text.set_text("修改时间")
     d_2button_text.center()
+    d_2button.add_event_cb(open_time_setting_cb, lv.EVENT.CLICKED, None)
 
     # 左上按钮
     d_3button = lv.button(scr)
@@ -302,7 +519,11 @@ def load_mainmenu():
 
 
 
-def open_calendar_cb(e):
+def open_time_setting_cb(e, *args):
+    load_time_setting()
+
+
+def open_calendar_cb(e, *args):
     global current_screen_state
     current_screen_state = "CALENDAR"
 
