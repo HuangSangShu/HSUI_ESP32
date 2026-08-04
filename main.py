@@ -105,7 +105,6 @@ def build_mainscreen():
 def os_gotocal(pin):
     global screen_state
     screen_state = "CALENDAR"
-    os_show_small_clock(scr_calendar)
     lv.screen_load(scr_calendar)
 
 
@@ -330,12 +329,10 @@ def boot():
 
         # 如果在时钟页面，实时更新时间
         if screen_state == "MAINSCREEN":
-            os_update_clock_labels()
-        
-        if screen_state == "MAINMENU":        
+            os_update_clock_labels()        
+        elif screen_state == "MAINMENU":        
             os_update_small_clock(obj_menuclock)
-
-        if screen_state == "CALENDAR":        
+        elif screen_state == "CALENDAR":        
             os_update_small_clock(obj_calclock)
 
         time.sleep_ms(50)
