@@ -26,7 +26,8 @@ scr_mainmenu = None
 obj_mainclock = None
 obj_mainweekday = None
 obj_maindate = None
-obj_smallclock = None
+obj_menuclock = None
+obj_calclock = None
     
 def os_button_pressed(pin):
     global last_boot, need_switch, screen_state, scr_calendar
@@ -59,19 +60,17 @@ def os_update_clock_labels():
     obj_mainweekday.set_text(weekdays_chinese[now_time[6]])
     obj_maindate.set_text(f"{now_time[1]}/{now_time[2]}")
 
-def os_update_small_clock():
-    global obj_smallclock
-    if obj_smallclock is None:
-        return
+def os_update_small_clock(obj):
     now_time = time.localtime()
-    obj_smallclock.set_text(f"{now_time[3]:02d}:{now_time[4]:02d}")
+    obj.set_text(f"{now_time[3]:02d}:{now_time[4]:02d}")
 
-def os_show_small_clock(scr,x=250,y=3):
-    global obj_smallclock, sty_text14
-    obj_smallclock = lv.label(scr)
-    obj_smallclock.add_style(sty_text14,0)
-    obj_smallclock.set_pos(x,y)
-    os_update_small_clock()
+def os_show_small_clock(scr, x=250, y=3):
+    global sty_text14
+    label = lv.label(scr)
+    label.add_style(sty_text14,0)
+    label.set_pos(x,y)
+    os_update_small_clock(label)
+    return label
 
 def build_mainscreen():
     global screen_state, obj_mainclock, obj_mainweekday, obj_maindate, obj_smallclock,scr_mainscreen
@@ -106,18 +105,21 @@ def build_mainscreen():
 def os_gotocal(pin):
     global screen_state
     screen_state = "CALENDAR"
+    os_show_small_clock(scr_calendar)
     lv.screen_load(scr_calendar)
 
 
 def build_mainmenu():
-    global screen_state,scr_mainmenu
+    global screen_state,scr_mainmenu,obj_menuclock
 
     
     scr_mainmenu = lv.obj()
 
     scr_mainmenu.set_style_bg_color(BACK, 0)
 
-    os_show_small_clock(scr_mainmenu)
+    obj_menuclock = os_show_small_clock(scr_mainmenu)
+
+
 
     obj_menubtn01 = lv.button(scr_mainmenu)
     obj_menubtn01.add_style(sty_text14, 0)
@@ -174,14 +176,14 @@ def build_mainmenu():
     obj_menubtn06.add_event_cb(None, lv.EVENT.CLICKED, None)
    
 def build_calendar(e = None):
-    global screen_state,scr_calendar
+    global screen_state,scr_calendar,obj_calclock
 
     
     scr_calendar = lv.obj()
 
     scr_calendar.set_style_bg_color(BACK, 0)
 
-    os_show_small_clock(scr_calendar)
+    obj_calclock = os_show_small_clock(scr_calendar)
 
     cal = lv.calendar(scr_calendar)
     cal.set_size(320, 220)
@@ -191,7 +193,7 @@ def build_calendar(e = None):
     cal.set_today_date(now_time[0],now_time[1],now_time[2])
 
 def boot():
-    global FONT48, FONT14, sty_text14, BACK, FRONT, btn_boot, btn_home, screen_state,issleep,display,need_switch
+    global FONT48, FONT14, sty_text14, BACK, FRONT, btn_boot, btn_home, screen_state,issleep,display,need_switch,obj_menuclock,obj_calclock
 
     acc = machine.Pin(40, machine.Pin.OUT)
     acc.value(1)
@@ -317,18 +319,24 @@ def boot():
             if screen_state == "MAINSCREEN":
                 lv.screen_load(scr_mainmenu)
                 screen_state = "MAINMENU"
+                
             elif screen_state == "MAINMENU":
                 lv.screen_load(scr_mainscreen)
                 screen_state = "MAINSCREEN"
             elif screen_state == "CALENDAR":
                 lv.screen_load(scr_mainmenu)
                 screen_state = "MAINMENU"
+                
 
         # 如果在时钟页面，实时更新时间
         if screen_state == "MAINSCREEN":
             os_update_clock_labels()
         
-        os_update_small_clock()
+        if screen_state == "MAINMENU":        
+            os_update_small_clock(obj_menuclock)
+
+        if screen_state == "CALENDAR":        
+            os_update_small_clock(obj_calclock)
 
         time.sleep_ms(50)
         wdt.feed()
