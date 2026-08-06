@@ -79,7 +79,7 @@ def build_timeset():
     d_back.set_pos(235, 175)
     d_back.add_style(state.sty_text14, 0)
     d_back_lab = lv.label(d_back)
-    d_back_lab.set_text("返回")
+    d_back_lab.set_text("取消")
     d_back_lab.center()
     d_back.add_event_cb(time_back_cb, lv.EVENT.CLICKED, None)
 
