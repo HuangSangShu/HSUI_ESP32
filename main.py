@@ -21,6 +21,7 @@ need_switch = False
 scr_calendar = None
 scr_mainscreen = None
 scr_mainmenu = None
+scr_setting = None
 
 # 保存时钟标签对象的全局引用以便局部更新
 obj_mainclock = None
@@ -28,6 +29,7 @@ obj_mainweekday = None
 obj_maindate = None
 obj_menuclock = None
 obj_calclock = None
+obj_setclock = None
     
 def os_button_pressed(pin):
     global last_boot, need_switch, screen_state, scr_calendar
@@ -107,6 +109,10 @@ def os_gotocal(pin):
     screen_state = "CALENDAR"
     lv.screen_load(scr_calendar)
 
+def os_gotoset(pin):
+    global screen_state
+    screen_state = "SETTING"
+    lv.screen_load(scr_setting)
 
 def build_mainmenu():
     global screen_state,scr_mainmenu,obj_menuclock
@@ -127,7 +133,7 @@ def build_mainmenu():
     obj_menubtn01_text = lv.label(obj_menubtn01)
     obj_menubtn01_text.set_text("设置")
     obj_menubtn01_text.center()
-    obj_menubtn01.add_event_cb(None, lv.EVENT.CLICKED, None)
+    obj_menubtn01.add_event_cb(os_gotoset, lv.EVENT.CLICKED, None)
     
     obj_menubtn02 = lv.button(scr_mainmenu)
     obj_menubtn02.add_style(sty_text14, 0)
@@ -173,7 +179,76 @@ def build_mainmenu():
     obj_menubtn06_text.set_text("none")
     obj_menubtn06_text.center()
     obj_menubtn06.add_event_cb(None, lv.EVENT.CLICKED, None)
-   
+
+def build_setting():
+
+    global screen_state,scr_setting,obj_setclock
+
+    
+    scr_setting = lv.obj()
+    scr_setting.set_style_bg_color(BACK, 0)
+    obj_setclock = os_show_small_clock(scr_setting)
+
+
+
+    obj_menubtn01 = lv.button(scr_setting)
+    obj_menubtn01.add_style(sty_text14, 0)
+    obj_menubtn01.set_size(145, 70)
+    obj_menubtn01.set_pos(10, 20)
+    obj_menubtn01_text = lv.label(obj_menubtn01)
+    obj_menubtn01_text.set_text("日期与时间")
+    obj_menubtn01_text.center()
+    obj_menubtn01.add_event_cb(None, lv.EVENT.CLICKED, None)
+    
+    obj_menubtn02 = lv.button(scr_setting)
+    obj_menubtn02.add_style(sty_text14, 0)
+    obj_menubtn02.set_size(145, 70)
+    obj_menubtn02.set_pos(165, 20)
+    obj_menubtn02_text = lv.label(obj_menubtn02)
+    obj_menubtn02_text.set_text("显示")
+    obj_menubtn02_text.center()
+    obj_menubtn02.add_event_cb(None, lv.EVENT.CLICKED, None)
+
+    obj_menubtn03 = lv.button(scr_setting)
+    obj_menubtn03.add_style(sty_text14, 0)
+    obj_menubtn03.set_size(145, 70)
+    obj_menubtn03.set_pos(10, 100)
+    obj_menubtn03_text = lv.label(obj_menubtn03)
+    obj_menubtn03_text.set_text("电源")
+    obj_menubtn03_text.center()
+    obj_menubtn03.add_event_cb(None, lv.EVENT.CLICKED, None)
+    
+    obj_menubtn04 = lv.button(scr_setting)
+    obj_menubtn04.add_style(sty_text14, 0)
+    obj_menubtn04.set_size(145, 70)
+    obj_menubtn04.set_pos(165, 100)
+    obj_menubtn04_text = lv.label(obj_menubtn04)
+    obj_menubtn04_text.set_text("关于")
+    obj_menubtn04_text.center()
+    obj_menubtn04.add_event_cb(None, lv.EVENT.CLICKED, None)
+
+    '''obj_menubtn05 = lv.button(scr_setting)
+    obj_menubtn05.add_style(sty_text14, 0)
+    obj_menubtn05.set_size(145, 70)
+    obj_menubtn05.set_pos(10, 180)
+    obj_menubtn05_text = lv.label(obj_menubtn05)
+    obj_menubtn05_text.set_text("none")
+    obj_menubtn05_text.center()
+    obj_menubtn05.add_event_cb(None, lv.EVENT.CLICKED, None)
+
+    obj_menubtn06 = lv.button(scr_setting)
+    obj_menubtn06.add_style(sty_text14, 0)
+    obj_menubtn06.set_size(145, 70)
+    obj_menubtn06.set_pos(165, 180)
+    obj_menubtn06_text = lv.label(obj_menubtn06)
+    obj_menubtn06_text.set_text("none")
+    obj_menubtn06_text.center()
+    obj_menubtn06.add_event_cb(None, lv.EVENT.CLICKED, None)'''
+ 
+def build_timeset():
+    pass
+
+
 def build_calendar(e = None):
     global screen_state,scr_calendar,obj_calclock
 
@@ -209,7 +284,7 @@ def boot():
     _MISO = const(16)
     _SCK = const(18)
     _HOST = const(1)
-    _BUFFER_SIZE = const(30720)
+    _BUFFER_SIZE = const(75000)
 
     _LCD_CS = const(6)
     _LCD_FREQ = const(80000000)
@@ -261,6 +336,9 @@ def boot():
 
     display.set_rotation(lv.DISPLAY_ROTATION._270)
     display.set_backlight(75)
+
+    
+
     
     th = task_handler.TaskHandler()      
 
@@ -303,6 +381,7 @@ def boot():
     build_mainscreen()
     build_mainmenu()
     build_calendar()
+    build_setting()
     screen_state = "MAINSCREEN"
     lv.screen_load(scr_mainscreen)
 
@@ -311,31 +390,36 @@ def boot():
 
 
     # 主循环：仅用于硬件物理按键检查和非阻塞轮询
-    # last_btn_state = False
+    last_time_refresh = 0
     while True:
+
         if need_switch:
             need_switch = False
-            if screen_state == "MAINSCREEN":
+            if screen_state in ("MAINSCREEN","CALENDAR","SETTING"):
                 lv.screen_load(scr_mainmenu)
                 screen_state = "MAINMENU"
                 
             elif screen_state == "MAINMENU":
                 lv.screen_load(scr_mainscreen)
                 screen_state = "MAINSCREEN"
-            elif screen_state == "CALENDAR":
-                lv.screen_load(scr_mainmenu)
-                screen_state = "MAINMENU"
+
+
+        
                 
-
+        now_ms = time.ticks_ms()
         # 如果在时钟页面，实时更新时间
-        if screen_state == "MAINSCREEN":
-            os_update_clock_labels()        
-        elif screen_state == "MAINMENU":        
-            os_update_small_clock(obj_menuclock)
-        elif screen_state == "CALENDAR":        
-            os_update_small_clock(obj_calclock)
+        if time.ticks_diff(now_ms, last_time_refresh) > 1000:
+            last_time_refresh = now_ms
+            if screen_state == "MAINSCREEN":
+                os_update_clock_labels()
+            elif screen_state == "MAINMENU" and obj_menuclock:
+                os_update_small_clock(obj_menuclock)
+            elif screen_state == "CALENDAR" and obj_calclock:
+                os_update_small_clock(obj_calclock)
+            elif screen_state == "SETTING" and obj_setclock:
+                os_update_small_clock(obj_setclock)
 
-        time.sleep_ms(50)
+        time.sleep_ms(5)
         wdt.feed()
 
 boot()
