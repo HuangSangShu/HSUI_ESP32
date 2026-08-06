@@ -159,3 +159,5 @@ def build_calendar(e=None):
     cal.add_style(state.sty_text14, 0)
     now_time = time.localtime()
     cal.set_today_date(now_time[0], now_time[1], now_time[2])
+    cal.set_shown_year(now_time[0])
+    cal.set_shown_month(now_time[1])
