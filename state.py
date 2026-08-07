@@ -24,6 +24,7 @@ scr_mainscreen = None
 scr_mainmenu = None
 scr_setting = None
 scr_timeset = None
+scr_about = None
 
 # 保存时钟标签对象的全局引用，便于局部更新
 obj_mainclock = None
@@ -33,6 +34,7 @@ obj_smallclock = None
 obj_menuclock = None
 obj_calclock = None
 obj_setclock = None
+obj_aboutclock = None
 
 # 离线修改时间相关
 TIME_SAVE_FILE = '/time.dat'

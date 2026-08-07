@@ -17,6 +17,11 @@ def goto_setting(e=None):
     state.screen_state = "SETTING"
     lv.screen_load(state.scr_setting)
 
+def goto_about(e=None):
+    state.screen_state = "ABOUT"
+    lv.screen_load(state.scr_about)
+
+
 
 def build_mainscreen():
     state.scr_mainscreen = lv.obj()
@@ -144,10 +149,10 @@ def build_setting():
     obj_menubtn04_text = lv.label(obj_menubtn04)
     obj_menubtn04_text.set_text("关于")
     obj_menubtn04_text.center()
-    obj_menubtn04.add_event_cb(None, lv.EVENT.CLICKED, None)
+    obj_menubtn04.add_event_cb(goto_about, lv.EVENT.CLICKED, None)
 
 
-def build_calendar(e=None):
+def build_calendar():
     state.scr_calendar = lv.obj()
     state.scr_calendar.set_style_bg_color(state.BACK, 0)
 
@@ -161,3 +166,14 @@ def build_calendar(e=None):
     cal.set_today_date(now_time[0], now_time[1], now_time[2])
     cal.set_shown_year(now_time[0])
     cal.set_shown_month(now_time[1])
+
+def build_about():
+    state.scr_about = lv.obj()
+    state.scr_about.set_style_bg_color(state.BACK, 0)
+    state.obj_aboutclock = ui.os_show_small_clock(state.scr_about)
+    text = lv.label(state.scr_about)
+    text.set_size(320,220)
+    text.set_pos(0,20)
+    text.add_style(state.sty_text14, 0)
+    text.set_text("\n HSOS\n\n 版本号 snapshot-20260807\n\n Huangsangshu & Cookie987\n\n 该项目已于Github开源\n\n the test version \n doesn't represent the final result")
+    

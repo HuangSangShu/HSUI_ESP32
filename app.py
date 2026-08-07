@@ -63,6 +63,7 @@ def boot():
     screens.build_calendar()
     screens.build_setting()
     timeedit.build_timeset()
+    screens.build_about()
 
     state.screen_state = "MAINSCREEN"
     lv.screen_load(state.scr_mainscreen)
@@ -72,12 +73,15 @@ def boot():
     while True:
         if state.need_switch:
             state.need_switch = False
-            if state.screen_state in ("MAINSCREEN", "CALENDAR", "SETTING", "SETTIME"):
+            if state.screen_state in ("MAINSCREEN", "CALENDAR", "SETTING"):
                 lv.screen_load(state.scr_mainmenu)
                 state.screen_state = "MAINMENU"
             elif state.screen_state == "MAINMENU":
                 lv.screen_load(state.scr_mainscreen)
                 state.screen_state = "MAINSCREEN"
+            elif state.screen_state in ("SETTIME","ABOUT"):
+                lv.screen_load(state.scr_setting)
+                state.screen_state = "SETTING"
 
         now_ms = time.ticks_ms()
         # 如果在时钟页面，实时更新时间
@@ -91,6 +95,8 @@ def boot():
                 ui.os_update_small_clock(state.obj_calclock)
             elif state.screen_state == "SETTING" and state.obj_setclock:
                 ui.os_update_small_clock(state.obj_setclock)
+            elif state.screen_state == "ABOUT" and state.obj_aboutclock:
+                ui.os_update_small_clock(state.obj_aboutclock)
 
         time.sleep_ms(5)
         wdt.feed()
