@@ -3,6 +3,7 @@ import time
 
 import lvgl as lv
 
+import app
 import state
 import timeedit
 import ui
@@ -20,6 +21,10 @@ def goto_setting(e=None):
 def goto_about(e=None):
     state.screen_state = "ABOUT"
     lv.screen_load(state.scr_about)
+
+def goto_power(e=None):
+    state.screen_state = "POWER"
+    lv.screen_load(state.scr_set_power)
 
 
 
@@ -140,7 +145,7 @@ def build_setting():
     obj_menubtn03_text = lv.label(obj_menubtn03)
     obj_menubtn03_text.set_text("电源")
     obj_menubtn03_text.center()
-    obj_menubtn03.add_event_cb(None, lv.EVENT.CLICKED, None)
+    obj_menubtn03.add_event_cb(goto_power, lv.EVENT.CLICKED, None)
 
     obj_menubtn04 = lv.button(state.scr_setting)
     obj_menubtn04.add_style(state.sty_text14, 0)
@@ -176,4 +181,27 @@ def build_about():
     text.set_pos(0,20)
     text.add_style(state.sty_text14, 0)
     text.set_text("\n HSOS\n\n 版本号 snapshot-20260807\n\n Huangsangshu & Cookie987\n\n 该项目已于Github开源\n\n the test version \n doesn't represent the final result")
-    
+
+def build_set_shutdown():
+    state.scr_set_power = lv.obj()
+    state.scr_set_power.set_style_bg_color(state.BACK, 0)
+    state.obj_powerclock = ui.os_show_small_clock(state.scr_set_power)
+
+    obj_menubtn01 = lv.button(state.scr_set_power)
+    obj_menubtn01.add_style(state.sty_text14, 0)
+    obj_menubtn01.set_size(145, 70)
+    obj_menubtn01.set_pos(10, 20)
+    obj_menubtn01_text = lv.label(obj_menubtn01)
+    obj_menubtn01_text.set_text("关机")
+    obj_menubtn01_text.center()
+    obj_menubtn01.add_event_cb(app.shutdown, lv.EVENT.CLICKED, None)
+
+    obj_menubtn02 = lv.button(state.scr_set_power)
+    obj_menubtn02.add_style(state.sty_text14, 0)
+    obj_menubtn02.set_size(145, 70)
+    obj_menubtn02.set_pos(165, 20)
+    obj_menubtn02_text = lv.label(obj_menubtn02)
+    obj_menubtn02_text.set_text("息屏")
+    obj_menubtn02_text.center()
+    obj_menubtn02.add_event_cb(app.os_sleep, lv.EVENT.CLICKED, None)
+

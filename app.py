@@ -11,6 +11,10 @@ import timeedit
 import ui
 from timeutil import restore_saved_time
 
+def shutdown(pin):
+    acc = machine.Pin(40, machine.Pin.OUT)
+    acc.value(0)
+
 
 def os_button_pressed(pin):
     if not state.issleep:
@@ -64,6 +68,7 @@ def boot():
     screens.build_setting()
     timeedit.build_timeset()
     screens.build_about()
+    screens.build_set_shutdown()
 
     state.screen_state = "MAINSCREEN"
     lv.screen_load(state.scr_mainscreen)
@@ -79,7 +84,7 @@ def boot():
             elif state.screen_state == "MAINMENU":
                 lv.screen_load(state.scr_mainscreen)
                 state.screen_state = "MAINSCREEN"
-            elif state.screen_state in ("SETTIME","ABOUT"):
+            elif state.screen_state in ("SETTIME","ABOUT","POWER"):
                 lv.screen_load(state.scr_setting)
                 state.screen_state = "SETTING"
 
@@ -97,6 +102,8 @@ def boot():
                 ui.os_update_small_clock(state.obj_setclock)
             elif state.screen_state == "ABOUT" and state.obj_aboutclock:
                 ui.os_update_small_clock(state.obj_aboutclock)
+            elif state.screen_state == "POWER" and state.obj_aboutclock:
+                ui.os_update_small_clock(state.obj_powerclock)
 
         time.sleep_ms(5)
         wdt.feed()

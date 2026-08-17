@@ -12,6 +12,7 @@ display = None
 task_handler = None
 fs_drv = None
 
+
 # 记录当前页面状态
 screen_state = "BOOT"
 last_boot = 0
@@ -25,6 +26,7 @@ scr_mainmenu = None
 scr_setting = None
 scr_timeset = None
 scr_about = None
+scr_set_power = None
 
 # 保存时钟标签对象的全局引用，便于局部更新
 obj_mainclock = None
@@ -35,6 +37,7 @@ obj_menuclock = None
 obj_calclock = None
 obj_setclock = None
 obj_aboutclock = None
+obj_powerclock = None
 
 # 离线修改时间相关
 TIME_SAVE_FILE = '/time.dat'
